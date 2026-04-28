@@ -4,7 +4,7 @@ session_start();
 header('Content-Type: text/html; charset=UTF-8');
 
 $host = 'localhost';
-$dbname = 'u82564_task5';
+$dbname = 'u82564';
 $username_db = 'u82564';
 $password_db = '1341640';
 
@@ -25,7 +25,6 @@ if (isset($_GET['logout'])) {
     header('Location: index.php');
     exit();
 }
-
 
 $allowedLanguages = ['Pascal', 'C', 'C++', 'JavaScript', 'PHP', 'Python', 'Java', 'Haskell', 'Clojure', 'Prolog', 'Scala', 'Go'];
 
@@ -153,7 +152,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
     
     if (!empty($_SESSION['login']) && !empty($_SESSION['uid'])) {
         try {
-            $stmt = $pdo->prepare("SELECT * FROM applications WHERE id = ? AND login = ?");
+            $stmt = $pdo->prepare("SELECT * FROM task5_applications WHERE id = ? AND login = ?");
             $stmt->execute([$_SESSION['uid'], $_SESSION['login']]);
             $userData = $stmt->fetch(PDO::FETCH_ASSOC);
             
@@ -166,7 +165,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
                 $values['biography'] = htmlspecialchars($userData['biography']);
                 $values['contract_agreed'] = $userData['contract_agreed'];
                 
-                $stmtLang = $pdo->prepare("SELECT pl.name FROM application_languages al JOIN programming_languages pl ON al.language_id = pl.id WHERE al.application_id = ?");
+                $stmtLang = $pdo->prepare("SELECT pl.name FROM task5_application_languages al JOIN task5_programming_languages pl ON al.language_id = pl.id WHERE al.application_id = ?");
                 $stmtLang->execute([$userData['id']]);
                 $values['languages'] = $stmtLang->fetchAll(PDO::FETCH_COLUMN);
                 
@@ -273,16 +272,16 @@ else {
         
         if ($isAuthorized) {
             $stmt = $pdo->prepare("
-                UPDATE applications 
+                UPDATE task5_applications 
                 SET fio = ?, phone = ?, email = ?, birth_date = ?, gender = ?, biography = ?, contract_agreed = ?
                 WHERE id = ? AND login = ?
             ");
             $stmt->execute([$fio, $phone, $email, $birth_date, $gender, $biography, $contract_agreed == '1' ? 1 : 0, $_SESSION['uid'], $_SESSION['login']]);
             
-            $pdo->prepare("DELETE FROM application_languages WHERE application_id = ?")->execute([$_SESSION['uid']]);
+            $pdo->prepare("DELETE FROM task5_application_languages WHERE application_id = ?")->execute([$_SESSION['uid']]);
             
-            $langIdStmt = $pdo->prepare("SELECT id FROM programming_languages WHERE name = ?");
-            $insertLangStmt = $pdo->prepare("INSERT INTO application_languages (application_id, language_id) VALUES (?, ?)");
+            $langIdStmt = $pdo->prepare("SELECT id FROM task5_programming_languages WHERE name = ?");
+            $insertLangStmt = $pdo->prepare("INSERT INTO task5_application_languages (application_id, language_id) VALUES (?, ?)");
             
             foreach ($languages as $langName) {
                 $langIdStmt->execute([$langName]);
@@ -298,7 +297,7 @@ else {
             $passwordHash = password_hash($plainPassword, PASSWORD_DEFAULT);
             
             // Проверяем уникальность логина
-            $checkStmt = $pdo->prepare("SELECT id FROM applications WHERE login = ?");
+            $checkStmt = $pdo->prepare("SELECT id FROM task5_applications WHERE login = ?");
             $checkStmt->execute([$login]);
             if ($checkStmt->fetch()) {
                 $login = $login . '_' . rand(1000, 9999);
@@ -307,15 +306,15 @@ else {
             $pdo->beginTransaction();
             
             $stmt = $pdo->prepare("
-                INSERT INTO applications (fio, phone, email, birth_date, gender, biography, contract_agreed, login, password_hash) 
+                INSERT INTO task5_applications (fio, phone, email, birth_date, gender, biography, contract_agreed, login, password_hash) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             $stmt->execute([$fio, $phone, $email, $birth_date, $gender, $biography, $contract_agreed == '1' ? 1 : 0, $login, $passwordHash]);
             
             $applicationId = $pdo->lastInsertId();
             
-            $langIdStmt = $pdo->prepare("SELECT id FROM programming_languages WHERE name = ?");
-            $insertLangStmt = $pdo->prepare("INSERT INTO application_languages (application_id, language_id) VALUES (?, ?)");
+            $langIdStmt = $pdo->prepare("SELECT id FROM task5_programming_languages WHERE name = ?");
+            $insertLangStmt = $pdo->prepare("INSERT INTO task5_application_languages (application_id, language_id) VALUES (?, ?)");
             
             foreach ($languages as $langName) {
                 $langIdStmt->execute([$langName]);
